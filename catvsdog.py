@@ -109,37 +109,56 @@ for file in listdir(src_directory):
         shutil.copyfile(src,dst)
 
 
-#CNN model 
-from tensorflow import keras
-from tensorflow.keras import layers
-def define_model():
-  model = keras.Sequential()
-  model.add(layers.Conv2D(32,(3,3),activation='relu',kernel_initializer='he_uniform',padding='same',input_shape=(200,200,3)))
-  model.add(layers.MaxPooling2D((2,2)))
-  model.add(layers.Flatten())
-  model.add(layers.Dense(128,activation='relu',kernel_initializer='he_uniform'))
-  model.add(layers.Dense(1,activation='sigmoid'))
+from keras.models import Sequential
+from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
+from keras.layers import Flatten
+from keras.layers import Dense
 
-  #Compile model
-  opt = keras.optimizers.SGD(lr=0.001,momentum=0.9)
-  model.compile(optimizer=opt,loss='binary_crossentropy',metrics=['accuracy'])
-  return model
+# Initialising the CNN
+classifier = Sequential()
 
-model = define_model()
+# Convolution
+classifier.add(Conv2D(32, (3, 3), input_shape = (200, 200, 3), activation = 'relu'))
 
-#Converting the image pixels to scale between 0 and 1
+# Pooling
+classifier.add(MaxPooling2D(pool_size = (2, 2)))
+
+# Adding a second convolutional layer
+classifier.add(Conv2D(32, (3, 3), activation = 'relu'))
+classifier.add(MaxPooling2D(pool_size = (2, 2)))
+
+# Flattening
+classifier.add(Flatten())
+
+# Full connection
+classifier.add(Dense(units = 128, activation = 'relu'))
+classifier.add(Dense(units = 1, activation = 'sigmoid'))
+
+# Compiling the CNN
+classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
 from keras.preprocessing.image import ImageDataGenerator
 
-datagen = ImageDataGenerator(rescale=1.0/255.0)
+train_datagen = ImageDataGenerator(rescale = 1./255,
+                                   shear_range = 0.2,
+                                   zoom_range = 0.2,
+                                   horizontal_flip = True)
 
-#making test and train sets
-train_it  = datagen.flow_from_directory('dataset_dogs_vs_cats/train/',
-                                        class_mode='binary',batch_size=64,target_size=(200,200))
-test_it = datagen.flow_from_directory('dataset_dogs_vs_cats/test/',
-                                      class_mode='binary',batch_size=64,target_size=(200,200))
+test_datagen = ImageDataGenerator(rescale = 1./255)
 
-history = model.fit_generator(train_it,steps_per_epoch=len(train_it),
-                              validation_data=test_it,validation_steps=len(test_it),epochs=20,verbose=0)
-# evaluate model
-_, acc = model.evaluate_generator(test_it, steps=len(test_it), verbose=0)
-print('> %.3f' % (acc * 100.0))
+training_set = train_datagen.flow_from_directory('dataset_dogs_vs_cats/train/',
+                                                 target_size = (200, 200),
+                                                 batch_size = 32,
+                                                 class_mode = 'binary')
+
+test_set = test_datagen.flow_from_directory('dataset_dogs_vs_cats/test/',
+                                            target_size = (200, 200),
+                                            batch_size = 32,
+                                            class_mode = 'binary')
+
+classifier.fit_generator(training_set,
+                         steps_per_epoch = 8000,
+                         epochs = 50,
+                         validation_data = test_set,
+                         validation_steps = 2000)
