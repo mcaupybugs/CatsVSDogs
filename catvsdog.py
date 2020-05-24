@@ -135,6 +135,10 @@ classifier.add(Flatten())
 classifier.add(Dense(units = 128, activation = 'relu'))
 classifier.add(Dense(units = 1, activation = 'sigmoid'))
 
+
+#Loading the model
+#classifier.load_weights("/kaggle/output/weights.best.hdf5")
+
 # Compiling the CNN
 classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
 
@@ -157,8 +161,13 @@ test_set = test_datagen.flow_from_directory('dataset_dogs_vs_cats/test/',
                                             batch_size = 32,
                                             class_mode = 'binary')
 
+filepath="weights.best.hdf5"
+checkpoint = ModelCheckpoint(filepath, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
+callbacks_list = [checkpoint]
+
 classifier.fit_generator(training_set,
                          steps_per_epoch = 8000,
                          epochs = 50,
                          validation_data = test_set,
+                         callbacks=callbacks_list,
                          validation_steps = 2000)
