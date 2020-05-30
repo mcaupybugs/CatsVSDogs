@@ -3,7 +3,7 @@ from keras.preprocessing import image
 import tensorflow as tf
 from tensorflow import keras
 
-classifier = keras.models.load_model('model.h5')
+classifier = keras.models.load_model('second.h5')
 
 #model = tf.keras.load_model('model.h5')
 
